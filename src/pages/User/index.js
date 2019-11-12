@@ -13,6 +13,7 @@ import {
   OwnerAvatar,
   Info,
   Title,
+  Loading,
   Author,
 } from './styles';
 
@@ -31,6 +32,8 @@ export default class User extends Component {
   state = {
     stars: [],
     page: 1,
+    loading: true,
+    refreshing: false,
   };
 
   async componentDidMount() {
@@ -42,7 +45,7 @@ export default class User extends Component {
       `/users/${user.login}/starred?page=${String(page)}`
     );
 
-    this.setState({ stars: response.data });
+    this.setState({ stars: response.data, loading: false });
   }
 
   handleNavigate = repository => {
@@ -57,6 +60,8 @@ export default class User extends Component {
     const { page } = this.state;
     const actualPage = page + 1;
 
+    this.setState({ refreshing: true });
+
     const response = await api.get(
       `/users/${user.login}/starred?page=${String(actualPage)}`
     );
@@ -65,13 +70,29 @@ export default class User extends Component {
       this.setState(prevState => ({
         stars: [...prevState.stars, ...response.data],
         page: actualPage,
+        refreshing: false,
       }));
+    }
+  };
+
+  refreshList = async () => {
+    const { navigation } = this.props;
+    const user = navigation.getParam('user');
+
+    const response = await api.get(`/users/${user.login}/starred?page=1`);
+
+    if (response) {
+      this.setState({
+        stars: response.data,
+        page: 1,
+        refreshing: false,
+      });
     }
   };
 
   render() {
     const { navigation } = this.props;
-    const { stars } = this.state;
+    const { stars, refreshing, loading } = this.state;
     const user = navigation.getParam('user');
 
     return (
@@ -81,25 +102,31 @@ export default class User extends Component {
           <Name>{user.name}</Name>
           <Bio>{user.bio}</Bio>
         </Header>
-        <Stars
-          data={stars}
-          keyExtractor={star => String(star.id)}
-          onEndReachedThreshold={0.2}
-          onEndReached={this.handleEndList}
-          renderItem={({ item }) => (
-            <Starred
-              onPress={() => {
-                this.handleNavigate(item);
-              }}
-            >
-              <OwnerAvatar source={{ uri: item.owner.avatar_url }} />
-              <Info>
-                <Title>{item.name}</Title>
-                <Author>{item.owner.login}</Author>
-              </Info>
-            </Starred>
-          )}
-        />
+        {loading ? (
+          <Loading />
+        ) : (
+          <Stars
+            data={stars}
+            keyExtractor={star => String(star.id)}
+            onEndReachedThreshold={0.2}
+            onEndReached={this.handleEndList}
+            refreshing={refreshing}
+            onRefresh={this.refreshList}
+            renderItem={({ item }) => (
+              <Starred
+                onPress={() => {
+                  this.handleNavigate(item);
+                }}
+              >
+                <OwnerAvatar source={{ uri: item.owner.avatar_url }} />
+                <Info>
+                  <Title>{item.name}</Title>
+                  <Author>{item.owner.login}</Author>
+                </Info>
+              </Starred>
+            )}
+          />
+        )}
       </Container>
     );
   }
