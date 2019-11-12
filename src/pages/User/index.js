@@ -30,7 +30,7 @@ export default class User extends Component {
 
   state = {
     stars: [],
-    page: 0,
+    page: 1,
   };
 
   async componentDidMount() {
@@ -55,14 +55,17 @@ export default class User extends Component {
     const { navigation } = this.props;
     const user = navigation.getParam('user');
     const { page } = this.state;
-    const Actualpage = page + 1;
+    const actualPage = page + 1;
 
     const response = await api.get(
-      `/users/${user.login}/starred?page=${String(Actualpage)}`
+      `/users/${user.login}/starred?page=${String(actualPage)}`
     );
 
     if (response) {
-      this.setState({ stars: response.data, page: Actualpage });
+      this.setState(prevState => ({
+        stars: [...prevState.stars, ...response.data],
+        page: actualPage,
+      }));
     }
   };
 
@@ -81,6 +84,7 @@ export default class User extends Component {
         <Stars
           data={stars}
           keyExtractor={star => String(star.id)}
+          onEndReachedThreshold={0.2}
           onEndReached={this.handleEndList}
           renderItem={({ item }) => (
             <Starred
