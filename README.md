@@ -1,4 +1,4 @@
-﻿# GitHubVisualizer
+﻿# Git Hub Visualizer
 
 App desenvolvido em react native para visualização de profiles e repositorios do git hub
 Para rodar o projeto em sua maquina é necessário as ferramentas abaixo:
